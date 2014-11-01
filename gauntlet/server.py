@@ -30,6 +30,9 @@ app = Flask(__name__)
 
 @app.route("/<sha>")
 def retrieve(sha):
+    """
+    Return an object from our database given its SHA-1 handle
+    """
     if not sha_re.match(sha):
         abort(404)
 
@@ -47,6 +50,9 @@ def retrieve(sha):
 
 @app.route("/", methods=["POST"])
 def send():
+    """
+    Place a new object into our database
+    """
     tmp_loc = os.path.join(app.config["GAUNTLET_OBJECTS_DIR"],
             str(uuid.uuid4()))
     output = open(tmp_loc, "w")
