@@ -223,21 +223,6 @@ class GauntletFile(Config):
         """
         return self['compose-buildonly'] + [string]
 
-    @directive("download-prefix", "gauntlet..")
-    def download_prefix(self, string):
-        """
-        Files in the buildinit folder that begin with the download prefix are
-        assumed to be text files containing SHA-1 sums. These are resolved with
-        the gauntlet server. If they are raw objects, those objects are copied
-        into the buildinit folder before chroot begins, at the same path as the
-        file that specified them, minus the download-prefix. If the hash is a
-        git commit, the repo is checked out into a folder which bears the name
-        of the file that specified the hash, minus the prefix.
-        """
-        if string == "off":
-            return None
-        return string
-
     @directive("file", [])
     def file(self, string):
         """

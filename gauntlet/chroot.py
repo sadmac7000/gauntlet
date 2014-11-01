@@ -54,28 +54,6 @@ class Chroot(object):
 
         shutil.copytree(".", build_path)
 
-        for (path, dirs, files) in os.walk(build_path):
-            for f in files:
-                if not f.startswith(self.config['download-prefix']):
-                    continue
-
-                magic_file = os.path.join(path, f)
-
-                with open(magic_file, 'r') as data:
-                    sha = data.read().strip()
-
-                target = os.path.join(path,
-                        f[len(self.config['download-prefix']):])
-
-                with open(target, 'w') as location:
-                    with self.server.get(sha) as data:
-                        chunk = 'a'
-                        while len(chunk) > 0:
-                            chunk = data.read(4096)
-                            location.write(chunk)
-
-                os.unlink(magic_file)
-
         for (path, sha) in self.config['file']:
             print build_path
             if os.path.isabs(path):
