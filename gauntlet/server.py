@@ -74,7 +74,10 @@ def send():
 
 if __name__ == "__main__":
     app.config["GAUNTLET_OBJECTS_DIR"] = "/tmp/test"
-    shutil.rmtree(app.config["GAUNTLET_OBJECTS_DIR"])
+    try:
+        shutil.rmtree(app.config["GAUNTLET_OBJECTS_DIR"])
+    except OSError:
+        pass
     os.mkdir(app.config["GAUNTLET_OBJECTS_DIR"])
     app.debug = True
     app.run()
