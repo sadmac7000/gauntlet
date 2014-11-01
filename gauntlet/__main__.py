@@ -18,10 +18,13 @@
 import re
 import os
 from config import GauntletFile
+from chroot import Chroot
 
 if __name__ == "__main__":
     gfile = None
 
     with open("Gauntlet") as mine:
         gfile = GauntletFile(mine)
-    print(gfile)
+
+    chroot = Chroot(gfile)
+    chroot.execute()
