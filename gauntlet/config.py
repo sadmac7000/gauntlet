@@ -209,7 +209,7 @@ class GauntletFile(Config):
             return [x.strip() for x in manifest.readlines() if len(x.strip())]
 
     @directive("task", "/build/build.exec")
-    def landing(self, string):
+    def task(self, string):
         """
         This config parameter specifies a path relative to the chroot that
         should be executed after the chroot is constructed and switched to, in
