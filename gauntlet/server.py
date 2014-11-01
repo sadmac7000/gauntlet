@@ -21,8 +21,9 @@ import os
 import uuid
 import hashlib
 import shutil
+import requests
 
-__all__ = ["app"]
+__all__ = ["app", "Server"]
 
 sha_re = re.compile(r'[a-zA-Z0-9]{40}')
 
@@ -79,6 +80,47 @@ def send():
     shutil.move(tmp_loc, path)
 
     return sha
+
+class ServerError(Exception):
+    """
+    An exception indicating some sort of error communicating with a server.
+    """
+    pass
+
+class Server(object):
+    """
+    A proxy object for a Gauntlet server
+    """
+    def __init__(self, uri):
+        """
+        Create a new proxy object for the gauntlet server at the given uri.
+        """
+        if uri[-1] != '/':
+            uri += '/'
+
+        self.uri = uri
+
+    def get(self, sha):
+        """
+        Fetch a hash from the gauntlet server
+        """
+        req = requests.get(self.uri + str(sha), stream=True)
+
+        if req.status_code != requests.codes.ok:
+            raise ServerError("Could not fetch " + sha + " from " + self.uri)
+
+        return req.raw
+
+    def post(self, data_or_fd):
+        """
+        Put a new object on the gauntlet server
+        """
+        req = requests.post(self.uri, data=data_or_fd)
+
+        if req.status_code != requests.codes.ok:
+            raise ServerError("Could not post item")
+
+        return req.text
 
 if __name__ == "__main__":
     app.config["GAUNTLET_OBJECTS_DIR"] = "/tmp/test"

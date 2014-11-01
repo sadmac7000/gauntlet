@@ -19,9 +19,16 @@ import re
 import os
 from config import GauntletFile
 from chroot import Chroot
+from server import Server
 
 if __name__ == "__main__":
     gfile = None
+    server = Server("http://127.0.0.1:5000")
+
+    hsh = server.post("hello")
+    print hsh
+
+    print server.get(hsh).read()
 
     with open("Gauntlet") as mine:
         gfile = GauntletFile(mine)
