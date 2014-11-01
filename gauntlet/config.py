@@ -162,6 +162,10 @@ class GauntletFile(Config):
     images to compose and how to build the new content.
     """
 
+    @directive("name")
+    def name(self, string):
+        return string
+
     @directive("buildinit-name", "build")
     def buildinit_rename(self, string):
         """
