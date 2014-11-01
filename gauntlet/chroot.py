@@ -25,8 +25,13 @@ class Chroot(object):
     tasks within it.
     """
 
-    def __init__(self, config, path = None):
+    def __init__(self, config, server, path = None):
+        """
+        In order to create a chroot, we need a config to specify how it should
+        be set up, and a server to resolve magic gauntlet files from.
+        """
         self.config = config
+        self.server = server
 
         if path == None:
             path = os.path.join("/tmp", str(uuid.uuid4()))
@@ -40,17 +45,36 @@ class Chroot(object):
 
         self.did_setup = True
 
-        if self.config.has_key('buildinit-rename'):
-            build_path = os.path.join(self.path, self.config['buildinit-rename'])
-        else:
-            build_path = os.path.join(self.path, self.config['buildinit'])
+        build_path = os.path.join(self.path, self.config['buildinit-name'])
 
         try:
             shutil.rmtree(self.path)
         except OSError:
             pass
 
-        shutil.copytree(self.config['buildinit'], build_path)
+        shutil.copytree(".", build_path)
+
+        for (path, dirs, files) in os.walk(build_path):
+            for f in files:
+                if not f.startswith(self.config['download-prefix']):
+                    continue
+
+                magic_file = os.path.join(path, f)
+
+                with open(magic_file, 'r') as data:
+                    sha = data.read().strip()
+
+                target = os.path.join(path,
+                        f[len(self.config['download-prefix']):])
+
+                with open(target, 'w') as location:
+                    with self.server.get(sha) as data:
+                        chunk = 'a'
+                        while len(chunk) > 0:
+                            chunk = data.read(4096)
+                            location.write(chunk)
+
+                os.unlink(magic_file)
 
     def execute(self):
         self.setup()

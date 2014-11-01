@@ -30,8 +30,8 @@ if __name__ == "__main__":
 
     print server.get(hsh).read()
 
-    with open("Gauntlet") as mine:
+    with open(".gauntlet") as mine:
         gfile = GauntletFile(mine)
 
-    chroot = Chroot(gfile)
+    chroot = Chroot(gfile, server)
     chroot.execute()

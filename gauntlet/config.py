@@ -162,25 +162,7 @@ class GauntletFile(Config):
     images to compose and how to build the new content.
     """
 
-    @directive("buildinit", "build")
-    def buildinit(self, string):
-        """
-        This config parameter specifies a folder in the git repository next to
-        the Gauntletfile which is copied directly into the chroot.
-        """
-        local = os.path.abspath('.')
-        path = os.path.abspath(string)
-        prefix = os.path.commonprefix([path, local])
-
-        if not os.path.samefile(prefix, local):
-            raise ConfigError("Build init folder must be inside the repo")
-
-        if not os.path.isdir(path):
-            raise ConfigError("Build init folder does not exist")
-
-        return path
-
-    @directive("buildinit-rename")
+    @directive("buildinit-name", "build")
     def buildinit_rename(self, string):
         """
         This config parameter specifies what the buildinit folder should be
