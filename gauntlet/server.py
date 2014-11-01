@@ -78,7 +78,7 @@ def send():
 
     shutil.move(tmp_loc, path)
 
-    return ""
+    return sha
 
 if __name__ == "__main__":
     app.config["GAUNTLET_OBJECTS_DIR"] = "/tmp/test"
