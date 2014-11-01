@@ -164,6 +164,10 @@ class GauntletFile(Config):
 
     @directive("buildinit", "build")
     def buildinit(self, string):
+        """
+        This config parameter specifies a folder in the git repository next to
+        the Gauntletfile which is copied directly into the chroot.
+        """
         local = os.path.abspath('.')
         path = os.path.abspath(string)
         prefix = os.path.commonprefix([path, local])
@@ -178,10 +182,19 @@ class GauntletFile(Config):
 
     @directive("buildinit-rename")
     def buildinit_rename(self, string):
+        """
+        This config parameter specifies what the buildinit folder should be
+        named after it is copied into the chroot.
+        """
         return string
 
     @directive("manifest")
     def manifest(self, string):
+        """
+        This config parameter specifies a manifest for the build results. All
+        output files should be listed in the file specified here, which must be
+        in the git repository with the Gauntletfile.
+        """
         local = os.path.abspath('.')
         path = os.path.abspath(string)
         prefix = os.path.commonprefix([path, local])
@@ -197,22 +210,52 @@ class GauntletFile(Config):
 
     @directive("task", "/build/build.exec")
     def landing(self, string):
+        """
+        This config parameter specifies a path relative to the chroot that
+        should be executed after the chroot is constructed and switched to, in
+        order to run the build.
+        """
         return string
 
     @directive("compose", [])
     def compose(self, string):
+        """
+        This config parameter, which can be specified multiple times, specifies
+        other gauntlet repositories whose build results should be placed into
+        the chroot before we build. The syntax is a SHA-1 sum which the
+        gauntlet server may resolve to either a git repository for another
+        gauntlet image or a build result image.
+        """
         return self['compose'] + [string]
 
     @directive("compose-buildonly", [])
     def compose_buildonly(self, string):
+        """
+        This config parameter is identical to compose, except the files placed
+        in the chroot are only there for the build, and are not added to the
+        result image or connected to it via a dependency.
+        """
         return self['compose-buildonly'] + [string]
 
     @directive("download-prefix", "gauntlet..")
     def download_prefix(self, string):
+        """
+        Files in the buildinit folder that begin with the download prefix are
+        assumed to be text files containing SHA-1 sums. These are resolved with
+        the gauntlet server. If they are raw objects, those objects are copied
+        into the buildinit folder before chroot begins, at the same path as the
+        file that specified them, minus the download-prefix. If the hash is a
+        git commit, the repo is checked out into a folder which bears the name
+        of the file that specified the hash, minus the prefix.
+        """
         if string == "off":
             return None
         return string
 
     @directive("git-hint", [])
     def git_hint(self, string):
+        """
+        This config parameter lists git repository URLs that we might touch.
+        These are relayed to the gauntlet server so it may refresh its indexes.
+        """
         return self['git-hint'] + [string]
