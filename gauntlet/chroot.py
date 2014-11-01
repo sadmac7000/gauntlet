@@ -76,6 +76,20 @@ class Chroot(object):
 
                 os.unlink(magic_file)
 
+        for (path, sha) in self.config['file']:
+            print build_path
+            if os.path.isabs(path):
+                path = os.path.join(self.path, path[1:])
+            else:
+                path = os.path.join(build_path, path)
+
+            with open(path, 'w') as location:
+                with self.server.get(sha) as data:
+                    chunk = 'a'
+                    while len(chunk) > 0:
+                        chunk = data.read(4096)
+                        location.write(chunk)
+
     def execute(self):
         self.setup()
         pid = os.fork()

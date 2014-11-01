@@ -238,6 +238,15 @@ class GauntletFile(Config):
             return None
         return string
 
+    @directive("file", [])
+    def file(self, string):
+        """
+        A file to be placed into the build root, or a repo to check out. We
+        specify a path within the build root and a sha-1.
+        """
+        path, sha = string.rsplit(None, 1)
+        return self['file'] + [(path, sha)]
+
     @directive("git-hint", [])
     def git_hint(self, string):
         """
