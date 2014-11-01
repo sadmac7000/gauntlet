@@ -39,7 +39,9 @@ def retrieve(sha):
 
     path = os.path.join(obj_folder, folder, obj)
     try:
-        return send_file(path)
+        response = app.make_response(send_file(path))
+        response.headers['X-Gauntlet-Type'] = "raw"
+        return response
     except IOError:
         abort(404)
 
