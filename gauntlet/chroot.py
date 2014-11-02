@@ -55,7 +55,6 @@ class Chroot(object):
         shutil.copytree(".", build_path)
 
         for (path, sha) in self.config['file']:
-            print build_path
             if os.path.isabs(path):
                 path = os.path.join(self.path, path[1:])
             else:
