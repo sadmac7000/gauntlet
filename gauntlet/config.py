@@ -100,9 +100,6 @@ class Config(dict):
 
             self.parse_line(line)
 
-    def defaults(self):
-        return {}
-
     def parse_line(self, line):
         """
         Parse a single line of a gauntlet configuration. Lines are generally in
