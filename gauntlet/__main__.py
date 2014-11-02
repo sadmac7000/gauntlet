@@ -26,9 +26,8 @@ if __name__ == "__main__":
     server = Server("http://127.0.0.1:5000")
 
     hsh = server.post("hello")
-    print hsh
-
-    print server.get(hsh).read()
+    repoid = server.git_post("ssh://git@github.com/sadmac7000/libason.git")
+    repo = server.get('6c4f4f69bfc49a4236ce5362cfa9bab133dc47eb')
 
     with open(".gauntlet") as mine:
         gfile = GauntletFile(mine)
