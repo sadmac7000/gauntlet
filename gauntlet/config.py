@@ -191,7 +191,7 @@ class GauntletFile(Config):
         with open(path) as manifest:
             return [x.strip() for x in manifest.readlines() if len(x.strip())]
 
-    @directive("task", "/build/build.exec")
+    @directive("task", "/build.exec")
     def task(self, string):
         """
         This config parameter specifies a path relative to the chroot that
