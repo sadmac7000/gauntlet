@@ -25,26 +25,22 @@ class Chroot(object):
     tasks within it.
     """
 
-    def __init__(self, config, server, path = None):
+    def __init__(self, server, path = None):
         """
-        In order to create a chroot, we need a config to specify how it should
-        be set up, and a server to resolve magic gauntlet files from.
+        In order to create a chroot, we need a server to resolve magic gauntlet
+        files from.
         """
-        self.config = config
         self.server = server
 
         if path == None:
             path = os.path.join("/tmp", str(uuid.uuid4()))
 
         self.path = path
-        self.did_setup = False
 
-    def setup(self):
-        if self.did_setup:
-            return
-
-        self.did_setup = True
-
+    def execute(self, config):
+        """
+        Run the build task for the given config in the chroot.
+        """
         build_path = os.path.join(self.path, self.config['buildinit-name'])
 
         try:
@@ -54,7 +50,7 @@ class Chroot(object):
 
         shutil.copytree(".", build_path)
 
-        for (path, sha) in self.config['file']:
+        for (path, sha) in config['file']:
             if os.path.isabs(path):
                 path = os.path.join(self.path, path[1:])
             else:
@@ -67,13 +63,11 @@ class Chroot(object):
                         chunk = data.read(4096)
                         location.write(chunk)
 
-    def execute(self):
-        self.setup()
         pid = os.fork()
 
         if pid == 0:
             os.chroot(self.path)
             os.chdir('/')
-            os.execl(self.config['task'], self.config['task'])
+            os.execl(config['task'], config['task'])
         else:
             os.waitpid(pid, 0)
