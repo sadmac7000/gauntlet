@@ -159,7 +159,3 @@ if __name__ == "__main__":
     stream = open(sys.argv[2], 'r')
     shard = Shard(stream, sys.argv[1])
     print shard.write_out(sys.argv[3])
-    shard2 = Shard.load(sys.argv[3])
-    shutil.rmtree("/tmp/shardextract")
-    os.makedirs("/tmp/shardextract")
-    shard2.explode("/tmp/shardextract")
