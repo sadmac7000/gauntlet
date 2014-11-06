@@ -1,5 +1,6 @@
 test_folder
 __pycache__
+gauntlet.egg-info
 
 *.pyc
 *.pyo
