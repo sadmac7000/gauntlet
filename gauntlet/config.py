@@ -113,7 +113,22 @@ class Config(dict):
         """
 
         valdict = dict(self.iteritems())
-        return yaml.dump(valdict)
+
+        remove = []
+
+        for key in valdict:
+            for methname, meth in self.__class__.__dict__.iteritems():
+                if not isinstance(meth, Directive):
+                    continue
+                if meth.directive_name != key:
+                    continue
+                if meth.defaults == valdict[key]:
+                    remove += [key]
+                    break
+
+        for key in remove:
+            del valdict[key]
+        return yaml.dump(valdict, default_flow_style=False)
 
 class GauntletFile(Config):
     """
