@@ -41,7 +41,7 @@ class Chroot(object):
         """
         Run the build task for the given config in the chroot.
         """
-        build_path = os.path.join(self.path, self.config['buildinit-name'])
+        build_path = os.path.join(self.path, self.config['build-path'])
 
         try:
             shutil.rmtree(self.path)

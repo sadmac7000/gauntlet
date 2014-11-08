@@ -140,11 +140,11 @@ class GauntletFile(Config):
     def name(self, string):
         return string
 
-    @directive("buildinit-name", "build")
-    def buildinit_rename(self, string):
+    @directive("build-path", "build")
+    def build_path(self, string):
         """
-        This config parameter specifies what the buildinit folder should be
-        named after it is copied into the chroot.
+        This config parameter specifies where the repo info should be copied to
+        inside the build root.
         """
         return string
 
