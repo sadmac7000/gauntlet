@@ -56,7 +56,7 @@ class directive(object):
         return Directive(self.name, self.defaults, method)
 
 class Config(dict):
-    directive_splitter = re.compile(r'^([a-zA-Z0-9_]+)\s*:\s*(.+)$')
+    directive_splitter = re.compile(r'^([a-zA-Z0-9_-]+)\s*:\s*(.+)$')
 
     def __init__(self, conf_file = None):
         """
