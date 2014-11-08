@@ -15,19 +15,13 @@
 # You should have received a copy of the GNU General Public License along with
 # Gauntlet.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 import os
+import yaml
 
 class ConfigError(Exception):
     """
     An exception indicating some sort of error in a configuration. The error
     string should contain more details
-    """
-    pass
-
-class ParseError(ConfigError):
-    """
-    An error message indicating problems parsing a configuration file.
     """
     pass
 
@@ -56,16 +50,19 @@ class directive(object):
         return Directive(self.name, self.defaults, method)
 
 class Config(dict):
-    directive_splitter = re.compile(r'^([a-zA-Z0-9_-]+)\s*:\s*(.+)$')
-
-    def __init__(self, conf_file = None):
+    def __init__(self, conf = None):
         """
         Initialize a Gauntlet configuration
 
-        conf_file:
-            A configuration file which will be parsed to generate the
+        conf:
+            A configuration file or stream which will be parsed to generate the
             properties in this configuration.
         """
+
+        try:
+            conf = conf.read()
+        except AttributeError:
+            pass
 
         dict.__init__(self)
 
@@ -78,44 +75,13 @@ class Config(dict):
 
             self.__raw_setitem(item.directive_name, item.defaults)
 
-        if conf_file == None:
+        if conf == None:
             return
 
-        line_prefix = ""
+        vals = yaml.load(conf)
 
-        for line in conf_file.readlines():
-            comment = line.find("#")
-            if comment >= 0:
-                line = line[0:comment]
-
-            line = (line_prefix + line).strip()
-            line_prefix = ""
-
-            if len(line) == 0:
-                continue
-
-            if line[-1] == '\\':
-                line_prefix = line[:-1].strip() + " "
-                continue
-
-            self.parse_line(line)
-
-    def parse_line(self, line):
-        """
-        Parse a single line of a gauntlet configuration. Lines are generally in
-        the "directive: value" format, where 'value' could be anything
-        depending on the directive.
-        """
-
-        if len(line) == 0:
-            return
-
-        match = self.directive_splitter.match(line)
-
-        if match == None:
-            raise ParseError("Malformed line: '" + line + "'")
-
-        self[match.group(1)] = match.group(2)
+        for i in vals:
+            self[i] = vals[i]
 
     def __raw_setitem(self, key, item):
         """
@@ -146,16 +112,8 @@ class Config(dict):
         Output a sumarized version of the config
         """
 
-        ret = ""
-
-        for k in self.keys():
-            if isinstance(self[k], str):
-                ret += k + ": " + self[k] + "\n"
-            else:
-                for i in self[k]:
-                    ret += k + ": " + i + "\n"
-
-        return ret
+        valdict = dict(self.iteritems())
+        return yaml.dump(valdict)
 
 class GauntletFile(Config):
     """
@@ -205,7 +163,7 @@ class GauntletFile(Config):
         return string
 
     @directive("compose", [])
-    def compose(self, string):
+    def compose(self, vals):
         """
         This config parameter, which can be specified multiple times, specifies
         other gauntlet repositories whose build results should be placed into
@@ -213,30 +171,42 @@ class GauntletFile(Config):
         gauntlet server may resolve to either a git repository for another
         gauntlet image or a build result image.
         """
-        return self['compose'] + [string]
+
+        if not isinstance(vals, list):
+            raise ConfigError("'compose' directive must be a list")
+
+        return vals
 
     @directive("compose-buildonly", [])
-    def compose_buildonly(self, string):
+    def compose_buildonly(self, vals):
         """
         This config parameter is identical to compose, except the files placed
         in the chroot are only there for the build, and are not added to the
         result image or connected to it via a dependency.
         """
-        return self['compose-buildonly'] + [string]
+        if not isinstance(vals, list):
+            raise ConfigError("'compose-buildonly' directive must be a list")
 
-    @directive("file", [])
-    def file(self, string):
+        return vals
+
+    @directive("files", [])
+    def file(self, vals):
         """
         A file to be placed into the build root, or a repo to check out. We
         specify a path within the build root and a sha-1.
         """
-        path, sha = string.rsplit(None, 1)
-        return self['file'] + [(path, sha)]
+        if not isinstance(vals, list):
+            raise ConfigError("'files' directive must be a list")
+
+        return vals
 
     @directive("git-hint", [])
-    def git_hint(self, string):
+    def git_hint(self, vals):
         """
         This config parameter lists git repository URLs that we might touch.
         These are relayed to the gauntlet server so it may refresh its indexes.
         """
-        return self['git-hint'] + [string]
+        if not isinstance(vals, list):
+            raise ConfigError("'git-hint' directive must be a list")
+
+        return vals
