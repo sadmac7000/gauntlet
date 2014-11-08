@@ -149,7 +149,11 @@ class Config(dict):
         ret = ""
 
         for k in self.keys():
-            ret += k + ": " + str(self[k]) + "\n"
+            if isinstance(self[k], str):
+                ret += k + ": " + self[k] + "\n"
+            else:
+                for i in self[k]:
+                    ret += k + ": " + i + "\n"
 
         return ret
 
