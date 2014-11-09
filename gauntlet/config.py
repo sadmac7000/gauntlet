@@ -17,6 +17,7 @@
 
 import os
 import yaml
+from copy import deepcopy
 
 class ConfigError(Exception):
     """
@@ -73,7 +74,7 @@ class Config(dict):
             except AttributeError:
                 continue
 
-            self.__raw_setitem(item.directive_name, item.defaults)
+            self.__raw_setitem(item.directive_name, deepcopy(item.defaults))
 
         if conf == None:
             return
