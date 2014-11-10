@@ -191,7 +191,7 @@ class GauntletFile(Config):
         if not isinstance(vals, list):
             raise ConfigError("'compose' directive must be a list")
 
-        return vals
+        return list(set(vals))
 
     @directive("compose-buildonly", [])
     def compose_buildonly(self, vals):
@@ -203,7 +203,7 @@ class GauntletFile(Config):
         if not isinstance(vals, list):
             raise ConfigError("'compose-buildonly' directive must be a list")
 
-        return vals
+        return list(set(vals))
 
     @directive("files", [])
     def file(self, vals):
