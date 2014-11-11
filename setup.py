@@ -34,4 +34,9 @@ setup(
         "Topic :: Software Development :: Build Tools",
         "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     ],
+    entry_points={
+        "console_scripts": [
+            "git-gauntlet = gauntlet.gitcmd:main"
+        ]
+    }
 )
