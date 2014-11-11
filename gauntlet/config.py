@@ -149,26 +149,6 @@ class GauntletFile(Config):
         """
         return string
 
-    @directive("manifest")
-    def manifest(self, string):
-        """
-        This config parameter specifies a manifest for the build results. All
-        output files should be listed in the file specified here, which must be
-        in the git repository with the Gauntletfile.
-        """
-        local = os.path.abspath('.')
-        path = os.path.abspath(string)
-        prefix = os.path.commonprefix([path, local])
-
-        if not os.path.samefile(prefix, local):
-            raise ConfigError("Manifest must be inside the repo")
-
-        if not os.path.isfile(path):
-            raise ConfigError("Manifest must be a file")
-
-        with open(path) as manifest:
-            return [x.strip() for x in manifest.readlines() if len(x.strip())]
-
     @directive("task", "/build.exec")
     def task(self, string):
         """
