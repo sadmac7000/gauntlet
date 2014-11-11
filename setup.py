@@ -38,5 +38,10 @@ setup(
         "console_scripts": [
             "git-gauntlet = gauntlet.gitcmd:main"
         ]
-    }
+    },
+    install_requires=[
+        "GitPython",
+        "requests",
+        "flask",
+    ]
 )
