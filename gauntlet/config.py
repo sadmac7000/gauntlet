@@ -16,6 +16,7 @@
 # Gauntlet.  If not, see <http://www.gnu.org/licenses/>.
 
 import os
+import re
 import yaml
 from copy import deepcopy
 
@@ -25,6 +26,11 @@ class ConfigError(Exception):
     string should contain more details
     """
     pass
+
+class ComposeCollideError(ConfigError):
+    """
+    Exception indicating we specified something strange in our compose rules.
+    """
 
 class Directive(object):
     """
@@ -158,6 +164,57 @@ class GauntletFile(Config):
         """
         return string
 
+    def compose_handler(self, vals, dirname):
+        """
+        This is the validator for both the `compose` and `compose-buildonly`
+        directives.
+        """
+
+        if not isinstance(vals, list):
+            raise ConfigError("'{}' directive must be a list".format(dirname))
+
+        for item in vals:
+            try:
+                if set(item.keys()) != set(['package', 'hash']):
+                    raise ConfigError("'{}' directive items must "
+                            "have 'package' and 'hash' keys".format(dirname))
+            except AttributeError:
+                raise ConfigError("'{}' directive must be "
+                        "a list of dictionaries".format(dirname))
+
+                if not re.match('^[a-zA-Z0-9]{40}$', item['hash']):
+                    raise ConfigError("'{}' directive items must have valid"
+                        "SHA-1 hashes".format(dirname))
+
+                if not re.match('^\w+$', item['package']):
+                    raise ConfigError("'{}' directive items must have valid"
+                        "package names".format(dirname))
+
+        vals = [tuple(x.items()) for x in vals]
+        vals = [dict(x) for x in set(vals)]
+
+        packages = [x['package'] for x in vals]
+        seen = set()
+
+        for package in packages:
+            if package in seen:
+                raise ComposeCollideError("Package '{}' listed twice at two "
+                    "revisions".format(package))
+
+            seen.add(package)
+
+        hashes = [x['hash'] for x in vals]
+        seen = set()
+
+        for a_hash in hashes:
+            if a_hash in seen:
+                raise ComposeCollideError("Hash '{}' listed twice for two "
+                    "packages".format(a_hash))
+
+            seen.add(a_hash)
+
+        return vals
+
     @directive("compose", [])
     def compose(self, vals):
         """
@@ -168,10 +225,7 @@ class GauntletFile(Config):
         gauntlet image or a build result image.
         """
 
-        if not isinstance(vals, list):
-            raise ConfigError("'compose' directive must be a list")
-
-        return list(set(vals))
+        return self.compose_handler(vals, 'compose')
 
     @directive("compose-buildonly", [])
     def compose_buildonly(self, vals):
@@ -180,10 +234,8 @@ class GauntletFile(Config):
         in the chroot are only there for the build, and are not added to the
         result image or connected to it via a dependency.
         """
-        if not isinstance(vals, list):
-            raise ConfigError("'compose-buildonly' directive must be a list")
 
-        return list(set(vals))
+        return self.compose_handler(vals, 'compose-buildonly')
 
     @directive("files", [])
     def file(self, vals):
