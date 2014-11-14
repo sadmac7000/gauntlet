@@ -237,14 +237,14 @@ class GauntletFile(Config):
 
         return self.compose_handler(vals, 'compose-buildonly')
 
-    @directive("files", [])
+    @directive("files", {})
     def file(self, vals):
         """
         A file to be placed into the build root, or a repo to check out. We
-        specify a path within the build root and a sha-1.
+        specify a path within the build root and a SHA-1.
         """
-        if not isinstance(vals, list):
-            raise ConfigError("'files' directive must be a list")
+        if not isinstance(vals, dict):
+            raise ConfigError("'files' directive must be a dict")
 
         return vals
 
