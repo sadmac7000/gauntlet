@@ -22,6 +22,9 @@ import sys
 import git
 import errno
 import re
+import ConfigParser
+#import progressbar
+from server import Server
 from config import GauntletFile, ComposeCollideError
 
 from argparse import ArgumentParser
@@ -76,12 +79,81 @@ class GitGauntletCmd(object):
         compose_parse.add_argument('--drop', nargs='+', default=None)
         compose_parse.add_argument('--build-only', action='store_true')
 
+        upload_parse = sc.add_parser('upload')
+        upload_parse.set_defaults(func=self.upload)
+        upload_parse.add_argument('path')
+
         self.args = base_args.parse_args()
         self.func = self.args.func
         self.gfile_path = os.path.join(self.repo.working_tree_dir, ".gauntlet")
 
     def __call__(self):
         return self.func()
+
+    def upload(self):
+        """
+        Main method for the 'upload' command. Puts a file on the gauntlet
+        server and sets the 'file' directive.
+        """
+        reader = self.repo.config_writer()
+        try:
+            server = reader.get_value('gauntlet', 'server')
+        except ConfigParser.NoOptionError:
+            print("You must set a gauntlet server\n"
+                    "Use 'git gauntlet server --set <url>'", file=sys.stderr)
+            return 1
+
+        repopath = os.path.abspath(self.args.path)
+        repopath = os.path.relpath(repopath, self.repo.working_tree_dir)
+
+        # FIXME: Make sure repopath is in self.repo.untracked_files
+        # once GitPython is updated and that property starts working again.
+
+        if not os.path.exists(self.args.path):
+            print("'{}' does not exist".format(repopath), file=sys.stderr)
+            return 1
+
+        server = Server(server)
+
+        # The server is in flask, and apparently WSGI can't handle chunked
+        # requests. There's code to implement a progress bar below, but it's
+        # disabled since we have to chunk the request to do it.
+        #
+        # See https://github.com/mitsuhiko/flask/issues/367
+        #
+        #if os.isatty(2): #stderr
+        #    progress = self.upload_progress(repopath,
+        #            os.path.getsize(self.args.path))
+        #else:
+        #    progress = None
+
+        with open(self.args.path, 'r') as f:
+            #def f_iter():
+            #    data = 'a'
+            #    count = 0
+            #    while len(data):
+            #        data = f.read(4096)
+            #        yield data
+            #        count += len(data)
+            #        progress.update(count)
+
+            #if progress:
+            #    progress.start()
+            #    sha = server.post(f_iter())
+            #    progress.finish()
+            #else:
+            #    sha = server.post(f)
+            sha = server.post(f)
+
+        gfile = self.get_gfile()
+        gfile['files'][repopath] = str(sha)
+        self.put_gfile(gfile)
+
+        with open(os.path.join(self.repo.working_tree_dir, '.gitignore'),
+            'a') as ignore:
+            print(repopath, file=ignore)
+
+        return 0
 
     def get_gfile(self):
         try:
@@ -122,6 +194,18 @@ class GitGauntletCmd(object):
                 "<name>:<hash> form")
 
         return {'package': fields.group(1), 'hash': fields.group(2) }
+
+    #@staticmethod
+    #def upload_progress(filename, size):
+    #    """
+    #    Get a progress bar
+    #    """
+    #    widgets = ['Uploading {} '.format(filename),
+    #            progressbar.Bar(marker='=', left='[', right=']'), ' ',
+    #            progressbar.Percentage(), ' ', progressbar.AdaptiveETA(), ' ',
+    #            progressbar.AdaptiveTransferSpeed()]
+
+    #    return progressbar.ProgressBar(widgets=widgets, maxval=size)
 
     def compose(self):
         """
