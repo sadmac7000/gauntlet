@@ -81,7 +81,8 @@ class GitGauntletCmd(object):
 
         upload_parse = sc.add_parser('upload')
         upload_parse.set_defaults(func=self.upload)
-        upload_parse.add_argument('path')
+        upload_parse.add_argument('--list', action='store_true')
+        upload_parse.add_argument('path', nargs='*')
 
         self.args = base_args.parse_args()
         self.func = self.args.func
@@ -95,7 +96,14 @@ class GitGauntletCmd(object):
         Main method for the 'upload' command. Puts a file on the gauntlet
         server and sets the 'file' directive.
         """
-        reader = self.repo.config_writer()
+
+        if self.args.list:
+            if len(self.args.path) > 0:
+                print("--list doesn't make sense with filenames",
+                        file=sys.stderr)
+                return 1
+
+        reader = self.repo.config_reader()
         try:
             server = reader.get_value('gauntlet', 'server')
         except ConfigParser.NoOptionError:
@@ -103,13 +111,39 @@ class GitGauntletCmd(object):
                     "Use 'git gauntlet server --set <url>'", file=sys.stderr)
             return 1
 
-        repopath = os.path.abspath(self.args.path)
+        gfile = self.get_gfile()
+        if len(self.args.path) == 0:
+
+            for path, sha in gfile['files'].iteritems():
+                print('{}:{}'.format(sha, path))
+
+            return 0
+
+        ret = 0
+
+        for path in self.args.path:
+            ret += self.do_upload(path, gfile, server)
+
+        self.put_gfile(gfile)
+        return ret
+
+    def do_upload(self, path, gfile, server):
+        """
+        Upload a single file to the gauntlet cache
+        """
+        repopath = os.path.abspath(path)
+
+        if not repopath.startswith(self.repo.working_tree_dir):
+            print("{}: File must be inside the "
+                    "working tree folder".format(path), file=sys.stderr)
+            return 1
+
         repopath = os.path.relpath(repopath, self.repo.working_tree_dir)
 
         # FIXME: Make sure repopath is in self.repo.untracked_files
         # once GitPython is updated and that property starts working again.
 
-        if not os.path.exists(self.args.path):
+        if not os.path.exists(path):
             print("'{}' does not exist".format(repopath), file=sys.stderr)
             return 1
 
@@ -127,7 +161,7 @@ class GitGauntletCmd(object):
         #else:
         #    progress = None
 
-        with open(self.args.path, 'r') as f:
+        with open(path, 'r') as f:
             #def f_iter():
             #    data = 'a'
             #    count = 0
@@ -145,9 +179,7 @@ class GitGauntletCmd(object):
             #    sha = server.post(f)
             sha = server.post(f)
 
-        gfile = self.get_gfile()
         gfile['files'][repopath] = str(sha)
-        self.put_gfile(gfile)
 
         with open(os.path.join(self.repo.working_tree_dir, '.gitignore'),
             'a') as ignore:
