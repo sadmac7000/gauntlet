@@ -23,7 +23,7 @@ import git
 import errno
 import re
 import ConfigParser
-#import progressbar
+import progressbar
 from server import Server
 from config import GauntletFile, ComposeCollideError
 from ansi.color import fg as ansi_fg
@@ -83,6 +83,8 @@ class GitGauntletCmd(object):
         upload_parse = sc.add_parser('upload')
         upload_parse.set_defaults(func=self.upload)
         upload_parse.add_argument('--list', action='store_true')
+        upload_parse.add_argument('--fetch', action='store_true')
+        upload_parse.add_argument('--drop', action='store_true')
         upload_parse.add_argument('path', nargs='*')
 
         self.args = base_args.parse_args()
@@ -98,8 +100,23 @@ class GitGauntletCmd(object):
         server and sets the 'file' directive.
         """
 
-        if self.args.list:
-            if len(self.args.path) > 0:
+        found = False
+
+        for i in [self.args.list, self.args.fetch, self.args.drop]:
+            if not i:
+                continue
+            if not found:
+                found = True
+                continue
+            print("You can only specify one of --list, --fetch, and --drop",
+                    file=sys.stderr)
+            return 1
+
+        if self.args.drop and len(self.args.path) == 0:
+            print ("You must specify filenames with --drop", file=sys.stderr)
+            return 1
+
+        if self.args.list and len(self.args.path) > 0:
                 print("--list doesn't make sense with filenames",
                         file=sys.stderr)
                 return 1
@@ -132,8 +149,12 @@ class GitGauntletCmd(object):
             coloring = os.isatty(1)
 
         gfile = self.get_gfile()
-        if len(self.args.path) == 0:
 
+        if self.args.fetch:
+            return self.upload_fetch(gfile, server)
+        if self.args.drop:
+            return self.upload_drop(gfile)
+        if len(self.args.path) == 0:
             for path, sha in gfile['files'].iteritems():
                 if coloring:
                     print('{} {}'.format(ansi_fg.green(sha), path))
@@ -149,6 +170,95 @@ class GitGauntletCmd(object):
 
         self.put_gfile(gfile)
         return ret
+
+    def upload_drop(self, gfile):
+        """
+        Process an upload --drop command
+        """
+
+        ret = 0
+        for path in self.args.path:
+            path = os.path.abspath(path)
+            path = os.path.relpath(path, self.repo.working_tree_dir)
+
+            if not path in gfile['files'].keys():
+                print("No such upload '{}'".format(path), file=sys.stderr)
+                ret += 1
+            else:
+                del gfile['files'][path]
+
+        self.put_gfile(gfile)
+        return ret
+
+    def upload_fetch(self, gfile, server):
+        """
+        Process an upload --fetch command
+        """
+
+        server = Server(server)
+
+        paths = gfile['files'].keys()
+
+        if len(paths) == 0:
+            print("No uploaded files to fetch", file=sys.stderr)
+            return 1
+
+        ret = 0
+
+        if len(self.args.path) > 0:
+            paths_good = []
+
+            for path in self.args.path:
+                path = os.path.abspath(path)
+                path = os.path.relpath(path, self.repo.working_tree_dir)
+
+                if not path in paths:
+                    printf("No uploaded file at '{}'".format(path),
+                            file=sys.stderr)
+                    ret += 1
+                else:
+                    paths_good += [path]
+
+            if not len(paths_good):
+                return ret
+
+            paths = paths_good
+
+        for path in paths:
+            sha = gfile['files'][path]
+            abpath = os.path.join(self.repo.working_tree_dir, path)
+            ret += self.upload_do_fetch(abpath, path, sha, server)
+
+        return ret
+
+    def upload_do_fetch(self, path, repopath, sha, server):
+        """
+        Get an upload from the server and put it at the given path
+        """
+
+        target = open(abpath, 'w')
+
+        if os.isatty(2):
+            size = server.get_size(sha)
+            progress = self.progress("Downloading", repopath, size)
+            progress.start()
+        else:
+            progress = None
+
+        src = server.get(sha)
+
+        buf = 'a'
+        while len(buf) > 0:
+            buf = src.read(4096)
+            progress.update(len(buf))
+            target.write(buf)
+
+        if progress:
+            progress.finish()
+
+        target.close()
+        return 0
+
 
     def do_upload(self, path, gfile, server):
         """
@@ -179,7 +289,7 @@ class GitGauntletCmd(object):
         # See https://github.com/mitsuhiko/flask/issues/367
         #
         #if os.isatty(2): #stderr
-        #    progress = self.upload_progress(repopath,
+        #    progress = self.progress("Uploading", repopath,
         #            os.path.getsize(self.args.path))
         #else:
         #    progress = None
@@ -250,17 +360,17 @@ class GitGauntletCmd(object):
 
         return {'package': fields.group(1), 'hash': fields.group(2) }
 
-    #@staticmethod
-    #def upload_progress(filename, size):
-    #    """
-    #    Get a progress bar
-    #    """
-    #    widgets = ['Uploading {} '.format(filename),
-    #            progressbar.Bar(marker='=', left='[', right=']'), ' ',
-    #            progressbar.Percentage(), ' ', progressbar.AdaptiveETA(), ' ',
-    #            progressbar.AdaptiveTransferSpeed()]
+    @staticmethod
+    def progress(task, filename, size):
+        """
+        Get a progress bar
+        """
+        widgets = ['{} {} '.format(task, filename),
+                progressbar.Bar(marker='=', left='[', right=']'), ' ',
+                progressbar.Percentage(), ' ', progressbar.AdaptiveETA(), ' ',
+                progressbar.AdaptiveTransferSpeed()]
 
-    #    return progressbar.ProgressBar(widgets=widgets, maxval=size)
+        return progressbar.ProgressBar(widgets=widgets, maxval=size)
 
     def compose(self):
         """

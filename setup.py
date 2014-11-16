@@ -44,6 +44,6 @@ setup(
         "requests",
         "flask",
         "ansi",
-        #"progressbar2",
+        "progressbar2",
     ]
 )

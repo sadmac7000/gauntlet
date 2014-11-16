@@ -142,6 +142,13 @@ class Server(object):
 
         self.uri = uri
 
+    def get_size(self, sha):
+        """
+        Get the size of an object
+        """
+        req = requests.head(self.uri + str(sha))
+        return int(req.headers['content-length'])
+
     def get(self, sha):
         """
         Fetch a hash from the gauntlet server
