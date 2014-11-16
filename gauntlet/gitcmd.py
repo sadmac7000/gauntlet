@@ -26,6 +26,7 @@ import ConfigParser
 #import progressbar
 from server import Server
 from config import GauntletFile, ComposeCollideError
+from ansi.color import fg as ansi_fg
 
 from argparse import ArgumentParser
 
@@ -111,11 +112,33 @@ class GitGauntletCmd(object):
                     "Use 'git gauntlet server --set <url>'", file=sys.stderr)
             return 1
 
+        try:
+            coloring = reader.get_value('color', 'ui')
+        except ConfigParser.NoOptionError:
+            coloring = 'auto'
+
+        try:
+            coloring_local = reader.get_value('color', 'gauntlet')
+        except ConfigParser.NoOptionError:
+            coloring_local = None
+
+        if coloring_local == 'false':
+            coloring = False
+        elif coloring == 'false':
+            coloring = False
+        elif coloring == 'always':
+            coloring = True
+        else:
+            coloring = os.isatty(1)
+
         gfile = self.get_gfile()
         if len(self.args.path) == 0:
 
             for path, sha in gfile['files'].iteritems():
-                print('{}:{}'.format(sha, path))
+                if coloring:
+                    print('{} {}'.format(ansi_fg.green(sha), path))
+                else:
+                    print('{} {}'.format(sha, path))
 
             return 0
 

@@ -43,6 +43,7 @@ setup(
         "GitPython",
         "requests",
         "flask",
+        "ansi",
         #"progressbar2",
     ]
 )
