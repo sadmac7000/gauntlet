@@ -107,7 +107,7 @@ class GitGauntletCmd(object):
         reader = self.repo.config_reader()
         try:
             server = reader.get_value('gauntlet', 'server')
-        except ConfigParser.NoOptionError:
+        except (ConfigParser.NoOptionError, ConfigParser.NoSectionError):
             print("You must set a gauntlet server\n"
                     "Use 'git gauntlet server --set <url>'", file=sys.stderr)
             return 1
